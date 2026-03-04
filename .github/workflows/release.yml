@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'package.json'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if version changed
+        id: check
+        run: |
+          CURRENT=$(node -p "require('./package.json').version")
+          if git tag "v${CURRENT}" 2>/dev/null; then
+            echo "new=true" >> $GITHUB_OUTPUT
+            echo "version=${CURRENT}" >> $GITHUB_OUTPUT
+          else
+            echo "Version v${CURRENT} already exists"
+            echo "new=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.new == 'true'
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Install and build
+        if: steps.check.outputs.new == 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish to npm
+        if: steps.check.outputs.new == 'true'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.new == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.check.outputs.version }}
+          name: v${{ steps.check.outputs.version }}
+          generate_release_notes: true

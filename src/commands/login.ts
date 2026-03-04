@@ -6,6 +6,7 @@ import { getToken, saveCredentials } from "../config/auth.js";
 import { getBaseUrl } from "../api/client.js";
 import { NyxError, handleError } from "../utils/errors.js";
 import type { TokenValidationResponse } from "../api/types.js";
+import { callbackPage } from "../ui/callback-page.js";
 
 export function registerLogin(program: Command): void {
   program
@@ -112,13 +113,11 @@ function startCallbackServer(): {
 
     if (token) {
       res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(
-        "<html><body><h2>Authenticated! You can close this tab.</h2></body></html>"
-      );
+      res.end(callbackPage("success", email));
       resolveToken({ token, email });
     } else {
-      res.writeHead(400, { "Content-Type": "text/plain" });
-      res.end("Missing token parameter");
+      res.writeHead(400, { "Content-Type": "text/html" });
+      res.end(callbackPage("error"));
     }
   });
 
