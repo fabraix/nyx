@@ -1,6 +1,6 @@
 {
   "name": "@fabraix/nyx",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "CLI for Nyx by Fabraix — AI Agent Security Audits",
   "license": "Apache-2.0",
   "repository": {
