@@ -1,0 +1,52 @@
+{
+  "name": "@fabraix/nyx",
+  "version": "0.1.1",
+  "description": "CLI for Nyx by Fabraix — AI Agent Security Audits",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabraix/nyx.git"
+  },
+  "homepage": "https://fabraix.com",
+  "bugs": {
+    "url": "https://github.com/fabraix/nyx/issues"
+  },
+  "keywords": [
+    "fabraix",
+    "nyx",
+    "ai",
+    "security",
+    "agent",
+    "audit",
+    "cli"
+  ],
+  "type": "module",
+  "bin": {
+    "nyx": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "chalk": "^5.4.0",
+    "commander": "^13.0.0",
+    "open": "^10.1.0",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
