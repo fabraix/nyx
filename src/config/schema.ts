@@ -15,6 +15,11 @@ const target = z.object({
   }),
 });
 
+const model = z.object({
+  provider: z.enum(["openai", "anthropic", "deepseek"]),
+  name: z.string().min(1, "model.name is required"),
+});
+
 export const configSchema = z.object({
   name: z.string().min(1, "name is required"),
   target,
@@ -22,6 +27,7 @@ export const configSchema = z.object({
   budget: z.number().positive().default(5),
   goal: z.enum(["low", "medium", "high", "critical"]).default("medium"),
   hints: z.array(z.string()).optional(),
+  model,
 });
 
 export type NyxConfig = z.infer<typeof configSchema>;

@@ -31,6 +31,7 @@ export function registerRun(program: Command): void {
           budget_usd: budget,
           severity_target: goal,
           hints: config.hints,
+          model: config.model,
         };
 
         const run = await apiRequest<RunCreated>(

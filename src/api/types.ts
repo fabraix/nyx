@@ -18,6 +18,11 @@ export interface ProtocolEndpoint {
   response?: Record<string, string>;
 }
 
+export interface ModelConfig {
+  provider: string; // openai | anthropic | deepseek
+  name: string;     // model identifier, e.g. claude-opus-4-6
+}
+
 export interface RunSubmission {
   config_name: string;
   name: string;
@@ -32,6 +37,7 @@ export interface RunSubmission {
   budget_usd: number;
   severity_target: string;
   hints?: string[];
+  model: ModelConfig;
 }
 
 export interface RunCreated {
