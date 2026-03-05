@@ -52,9 +52,7 @@ function renderEvent(
       break;
 
     case "attempt.progress":
-      if (verbose) {
-        console.log(chalk.dim(`  │ [${d.tool}] ${d.preview}`));
-      }
+      console.log(chalk.dim(`  │ [${d.tool}] ${d.preview}`));
       break;
 
     case "attempt.completed": {
