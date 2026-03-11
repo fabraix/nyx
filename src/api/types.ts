@@ -45,7 +45,6 @@ export interface RunCreated {
   config_name: string;
   status: string;
   created_at: string;
-  stream_url: string;
 }
 
 export interface RunStatus {
@@ -68,22 +67,4 @@ export interface RunList {
   total: number;
   limit: number;
   offset: number;
-}
-
-// --- SSE Events ---
-
-export type SSEEventType =
-  | "run.started"
-  | "attempt.started"
-  | "attempt.progress"
-  | "attempt.completed"
-  | "finding.saved"
-  | "run.completed"
-  | "run.failed"
-  | "run.error";
-
-export interface SSEEvent {
-  event: SSEEventType;
-  data: Record<string, unknown>;
-  id?: string;
 }
