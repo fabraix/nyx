@@ -11,15 +11,8 @@ export interface TokenValidationResponse {
 
 // --- Runs ---
 
-export interface ProtocolEndpoint {
-  method: string;
-  path: string;
-  body?: Record<string, unknown>;
-  response?: Record<string, string>;
-}
-
 export interface ModelConfig {
-  provider: string; // openai | anthropic | deepseek
+  provider: string; // openai | anthropic | deepseek | gemini
   name: string;     // model identifier, e.g. claude-opus-4-6
 }
 
@@ -27,15 +20,13 @@ export interface RunSubmission {
   config_name: string;
   name: string;
   target: {
-    base_url: string;
-    protocol: {
-      create_session: ProtocolEndpoint;
-      send_message: ProtocolEndpoint;
-    };
+    url?: string;
+    endpoint?: string;
+    credentials?: Record<string, string>;
   };
   objective: string;
   budget_usd: number;
-  severity_target: string;
+  severity_target: "low" | "medium" | "high" | "critical";
   hints?: string[];
   model: ModelConfig;
 }
