@@ -34,6 +34,8 @@ nyx run playground --verbose
 
 ## Authentication
 
+Get a token by signing up at [app.fabraix.com/signup](https://app.fabraix.com/signup).
+
 ```bash
 # Interactive browser-based login
 nyx login
