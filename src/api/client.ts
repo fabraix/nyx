@@ -19,14 +19,6 @@ export async function apiRequest<T>(
   return res.json() as Promise<T>;
 }
 
-export async function apiRawRequest(
-  method: string,
-  path: string,
-  accept: string
-): Promise<Response> {
-  return request(method, path, { accept });
-}
-
 async function request(
   method: string,
   path: string,
@@ -86,7 +78,6 @@ async function handleApiError(res: Response, path: string): Promise<never> {
     404: `Not found: ${path}`,
     409: "A run for this config is already in progress. Use `nyx status <name>` to check it.",
     422: `Validation error: ${detail}`,
-    425: "Run is still in progress. Report not ready yet.",
   };
 
   throw new NyxError(

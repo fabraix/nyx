@@ -11,10 +11,7 @@ export interface TokenValidationResponse {
 
 // --- Runs ---
 
-export interface ModelConfig {
-  provider: string; // openai | anthropic | deepseek | gemini
-  name: string;     // model identifier, e.g. claude-opus-4-6
-}
+export type Severity = "low" | "medium" | "high" | "critical";
 
 export interface RunSubmission {
   config_name: string;
@@ -24,11 +21,31 @@ export interface RunSubmission {
     endpoint?: string;
     credentials?: Record<string, string>;
   };
+  target_id: string;
   objective: string;
   budget_usd: number;
-  severity_target: "low" | "medium" | "high" | "critical";
+  severity_target: Severity;
   hints?: string[];
-  model: ModelConfig;
+}
+
+// --- Targets ---
+
+export interface TargetIn {
+  name: string;
+  slug: string;
+  url: string | null;
+  endpoint: string | null;
+  credentials: Record<string, string>;
+  hints: string[];
+  severity_target: Severity;
+  default_budget_usd: number;
+}
+
+export interface TargetOut extends TargetIn {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RunCreated {

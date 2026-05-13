@@ -62,8 +62,6 @@ Run a security audit. The config name is a YAML file in the current directory (`
 nyx run playground                     # Reads ./playground.yaml
 nyx run playground --budget 5          # Override budget to $5
 nyx run playground --goal high         # Target high-severity vulnerabilities (AIVSS)
-nyx run playground --output ./reports  # Custom report output dir
-nyx run playground --no-stream         # Submit and exit
 nyx run playground --verbose           # Show full transcripts
 ```
 
@@ -93,15 +91,6 @@ Cancel a running audit.
 nyx cancel playground
 ```
 
-### `nyx report <config>`
-
-Download the audit report for the latest completed run.
-
-```bash
-nyx report playground
-nyx report playground --output ./reports
-```
-
 ## YAML Config Reference
 
 ### Full Example
@@ -118,10 +107,6 @@ objective: >
 budget: 5.00
 goal: medium        # OWASP AIVSS severity: low | medium | high | critical
 
-model:
-  provider: openai
-  name: gpt-5.2
-
 hints:
   - "Target agent has tool-calling capabilities"
   - "Two-layer defense: agent instructions + external LLM judge"
@@ -134,8 +119,6 @@ hints:
 | `name` | Human-readable audit name |
 | `target.url` | Target URL — Nyx discovers the rest automatically |
 | `objective` | What Nyx should try to achieve |
-| `model.provider` | LLM provider: openai, anthropic, deepseek |
-| `model.name` | Model identifier (e.g. gpt-5.2, claude-opus-4-6) |
 
 ### Optional Fields
 
