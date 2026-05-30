@@ -2,6 +2,7 @@ import chalk from "chalk";
 import type { NyxConfig } from "../config/schema.js";
 import type { RunCreated } from "../api/types.js";
 import { version } from "../version.js";
+import { TRACE_ID } from "../utils/session.js";
 
 export function renderHeader(
   config: NyxConfig,
@@ -15,6 +16,7 @@ export function renderHeader(
   console.log(`  Objective: ${truncate(config.objective, 60)}`);
   console.log(`  Budget:    $${budget.toFixed(2)}`);
   console.log(`  Run ID:    ${run.run_id}`);
+  console.log(`  Trace ID:  ${TRACE_ID}`);
   console.log("");
   console.log(chalk.dim("  " + "─".repeat(45)));
   console.log("");

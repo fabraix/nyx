@@ -1,5 +1,13 @@
 import { getToken } from "../config/auth.js";
 import { NyxError } from "../utils/errors.js";
+import {
+  HEADER_TRACE_ID,
+  HEADER_SESSION_ID,
+  HEADER_REQUEST_ID,
+  HEADER_SOURCE,
+  newRequestId,
+} from "../utils/observability.js";
+import { SESSION_ID, TRACE_ID } from "../utils/session.js";
 
 const DEFAULT_BASE = "https://api.fabraix.com";
 
@@ -36,6 +44,10 @@ async function request(
   const headers: Record<string, string> = {
     "X-Verification-Token": token,
     Accept: opts.accept,
+    [HEADER_TRACE_ID]: TRACE_ID,
+    [HEADER_SESSION_ID]: SESSION_ID,
+    [HEADER_REQUEST_ID]: newRequestId(),
+    [HEADER_SOURCE]: "cli",
   };
   if (opts.body) headers["Content-Type"] = "application/json";
 
