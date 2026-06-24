@@ -1,7 +1,7 @@
 {
   "name": "@fabraix/nyx",
   "version": "0.1.8",
-  "description": "CLI for Nyx by Fabraix — AI Agent Security Audits",
+  "description": "CLI for Nyx by Fabraix \u2014 AI Agent Security Audits",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -42,7 +42,7 @@
     "chalk": "^5.4.0",
     "commander": "^13.0.0",
     "open": "^10.1.0",
-    "yaml": "^2.7.0",
+    "yaml": "^2.8.3",
     "zod": "^3.24.0"
   },
   "devDependencies": {
