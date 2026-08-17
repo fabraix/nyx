@@ -1,20 +1,20 @@
 import chalk from "chalk";
 import type { NyxConfig } from "../config/schema.js";
-import type { RunCreated } from "../api/types.js";
+import type { BudgetTier, RunCreated } from "../api/types.js";
 import { version } from "../version.js";
 import { TRACE_ID } from "../utils/session.js";
 
 export function renderHeader(
   config: NyxConfig,
   run: RunCreated,
-  budget: number
+  mode: BudgetTier
 ): void {
   console.log("");
   console.log(chalk.bold(`  nyx v${version} — AI Agent Security Audit`));
   console.log("");
   console.log(`  Target:    ${config.name}`);
   console.log(`  Objective: ${truncate(config.objective, 60)}`);
-  console.log(`  Budget:    $${budget.toFixed(2)}`);
+  console.log(`  Mode:      ${mode}`);
   console.log(`  Run ID:    ${run.run_id}`);
   console.log(`  Trace ID:  ${TRACE_ID}`);
   console.log("");

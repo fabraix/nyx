@@ -13,8 +13,7 @@ export const configSchema = z.object({
   name: z.string().min(1, "name is required"),
   target,
   objective: z.string().min(1, "objective is required"),
-  budget: z.number().positive().default(5),
-  goal: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+  mode: z.enum(["deep", "standard", "shallow", "fast"]).default("standard"),
   hints: z.array(z.string()).optional(),
 });
 

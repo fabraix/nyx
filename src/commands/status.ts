@@ -21,6 +21,7 @@ export function registerStatus(program: Command): void {
         console.log(`  Config:    ${run.config_name}`);
         console.log(`  Run ID:    ${run.run_id}`);
         console.log(`  Target:    ${run.name}`);
+        console.log(`  Mode:      ${run.budget_tier ?? "—"}`);
         console.log(`  Status:    ${formatStatus(run)}`);
         console.log(`  Started:   ${timeAgo(run.created_at)}`);
         console.log(`  Findings:  ${run.findings_count} saved`);

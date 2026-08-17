@@ -5,10 +5,10 @@ import { apiRequest } from "../api/client.js";
 import { renderHeader } from "../ui/renderer.js";
 import { handleError } from "../utils/errors.js";
 import type {
+  BudgetTier,
   RunCreated,
   RunStatus,
   RunSubmission,
-  Severity,
   TargetIn,
   TargetOut,
 } from "../api/types.js";
@@ -17,19 +17,17 @@ export function registerRun(program: Command): void {
   program
     .command("run <config>")
     .description("Run a security audit")
-    .option("--budget <n>", "Max spend in USD", parseFloat)
-    .option("--goal <level>", "AIVSS goal: low|medium|high|critical")
+    .option("--mode <tier>", "Budget tier: deep|standard|shallow|fast")
     .option("--target <id>", "Use this saved target id (skips find-or-create)")
     .option("--verbose", "Show full transcripts")
     .action(async (configArg: string, opts) => {
       try {
         const { config, configName } = loadConfig(configArg);
 
-        const budget = opts.budget ?? config.budget;
-        const goal = opts.goal ?? config.goal;
+        const mode: BudgetTier = opts.mode ?? config.mode;
 
         const targetId =
-          opts.target ?? (await findOrCreateTarget(config, budget, goal));
+          opts.target ?? (await findOrCreateTarget(config, mode));
 
         const submission: RunSubmission = {
           config_name: configName,
@@ -37,8 +35,7 @@ export function registerRun(program: Command): void {
           target: config.target,
           target_id: targetId,
           objective: config.objective,
-          budget_usd: budget,
-          severity_target: goal,
+          budget_tier: mode,
           hints: config.hints,
         };
 
@@ -48,7 +45,7 @@ export function registerRun(program: Command): void {
           submission,
         );
 
-        renderHeader(config, run, budget);
+        renderHeader(config, run, mode);
 
         const sigintHandler = () => {
           console.log("\n  Interrupted. Run continues server-side.");
@@ -87,8 +84,7 @@ export function registerRun(program: Command): void {
 
 async function findOrCreateTarget(
   config: NyxConfig,
-  budget: number,
-  goal: Severity,
+  mode: BudgetTier,
 ): Promise<string> {
   const targets = await apiRequest<TargetOut[]>("GET", "/v1/nyx/targets");
   const existing = targets.find((t) => t.name === config.name);
@@ -101,8 +97,7 @@ async function findOrCreateTarget(
     endpoint: config.target.endpoint ?? null,
     credentials: config.target.credentials ?? {},
     hints: config.hints ?? [],
-    severity_target: goal,
-    default_budget_usd: budget,
+    default_budget_tier: mode,
   };
   const created = await apiRequest<TargetOut>("POST", "/v1/nyx/targets", body);
   return created.id;

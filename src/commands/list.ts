@@ -39,7 +39,7 @@ export function registerList(program: Command): void {
 
           console.log(
             `  ${chalk.bold(run.config_name.padEnd(20))} ${status.padEnd(20)} ` +
-              `$${run.spent_usd.toFixed(2)}/$${run.budget_usd.toFixed(2)}  ${run.run_id}`
+              `${(run.budget_tier ?? "—").padEnd(10)} ${run.run_id}`
           );
         }
         console.log(

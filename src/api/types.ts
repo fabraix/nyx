@@ -11,7 +11,7 @@ export interface TokenValidationResponse {
 
 // --- Runs ---
 
-export type Severity = "low" | "medium" | "high" | "critical";
+export type BudgetTier = "deep" | "standard" | "shallow" | "fast";
 
 export interface RunSubmission {
   config_name: string;
@@ -23,8 +23,7 @@ export interface RunSubmission {
   };
   target_id: string;
   objective: string;
-  budget_usd: number;
-  severity_target: Severity;
+  budget_tier: BudgetTier;
   hints?: string[];
 }
 
@@ -37,8 +36,7 @@ export interface TargetIn {
   endpoint: string | null;
   credentials: Record<string, string>;
   hints: string[];
-  severity_target: Severity;
-  default_budget_usd: number;
+  default_budget_tier: BudgetTier;
 }
 
 export interface TargetOut extends TargetIn {
@@ -61,6 +59,7 @@ export interface RunStatus {
   name: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
   result: "success" | "exhausted" | "error" | null;
+  budget_tier?: BudgetTier | null;
   budget_usd: number;
   spent_usd: number;
   attempts_completed: number;
