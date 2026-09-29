@@ -1,7 +1,7 @@
 {
   "name": "@fabraix/nyx",
   "version": "0.1.8",
-  "description": "CLI for Nyx by Fabraix \u2014 AI Agent Security Audits",
+  "description": "CLI for Nyx by Fabraix — AI Agent Security Audits",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -25,7 +25,9 @@
     "nyx": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
+    "lint": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build"
   },
@@ -41,12 +43,14 @@
   "dependencies": {
     "chalk": "^5.4.0",
     "commander": "^13.0.0",
+    "ink": "^5.2.1",
     "open": "^10.1.0",
-    "yaml": "^2.8.3",
-    "zod": "^3.24.0"
+    "react": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "ink-testing-library": "^4.0.0",
     "typescript": "^5.7.0"
   }
 }

@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { terminalText } from "./terminal.js";
 
 export type ErrorCategory = "auth" | "config" | "api" | "network" | "file" | "unknown";
 
@@ -24,11 +25,11 @@ const EXIT_CODES: Record<ErrorCategory, number> = {
 
 export function handleError(err: unknown): never {
   if (err instanceof NyxError) {
-    console.error(chalk.red(`\n  Error: ${err.message}\n`));
+    console.error(chalk.red(`\n  Error: ${terminalText(err.message)}\n`));
     process.exit(EXIT_CODES[err.category]);
   }
 
   const msg = err instanceof Error ? err.message : String(err);
-  console.error(chalk.red(`\n  Unexpected error: ${msg}\n`));
+  console.error(chalk.red(`\n  Unexpected error: ${terminalText(msg)}\n`));
   process.exit(99);
 }
