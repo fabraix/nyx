@@ -1,15 +1,11 @@
-import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import {
   getSession,
   interruptAgent,
   listAgents,
-  listOperations,
-  reconcileOperation,
   resumeRun,
   submitMessage,
 } from "../api/session.js";
-import type { OperationResolution } from "../api/session.js";
 import { NyxError } from "../utils/errors.js";
 import type { SessionEvent, SessionPanel, SessionViewState } from "./session-state.js";
 
@@ -18,22 +14,20 @@ export const sessionHelp = [
   "/agents · /use /root/child     inspect or select an agent",
   "/interrupt [agent]            interrupt a turn or stop an inactive child",
   "/memory [query]               ask the agent to recall durable memory",
-  "/questions                    inspect pending operator requests",
+  "/questions                    inspect pending questions",
   "/answer <request> <text>      reply to a specific request",
   "/approve <request>            record approval for a specific request",
-  "/reconcile                    inspect unknown operations (admin)",
-  "/reconcile <operation> <file> submit a resolution JSON file with evidence",
   "/artifacts · /findings        inspect recorded outputs",
   "/transcript                   return to conversation",
   "/quit                         detach; agents continue server-side",
 ].join("\n");
 
 type SessionAPI = { getSession: typeof getSession; listAgents: typeof listAgents; submitMessage: typeof submitMessage;
-  interruptAgent: typeof interruptAgent; listOperations: typeof listOperations; reconcileOperation: typeof reconcileOperation;
+  interruptAgent: typeof interruptAgent;
   resumeRun: typeof resumeRun };
 
 // A just-recorded wake can briefly overlap the exiting supervisor's lease.
-// Retry only this causal operator action; ordinary session polling never calls
+// Retry only this causal user action; ordinary session polling never calls
 // the product-run recovery endpoint. The bounded backoff spans the server's
 // 75-second durable single-flight claim window, while a normal lease release
 // converges in the first few attempts.
@@ -51,8 +45,6 @@ export function createSessionController(options: {
     listAgents,
     submitMessage,
     interruptAgent,
-    listOperations,
-    reconcileOperation,
     resumeRun,
   };
   const { dispatch } = options;
@@ -103,7 +95,7 @@ export function createSessionController(options: {
       }
     } catch (error) {
       if (signal?.aborted) return;
-      // The answer/reconciliation receipt is already durable. Do not turn a
+      // The answer receipt is already durable. Do not turn a
       // failed redispatch acknowledgement into an invitation to repeat that
       // effect; surface the pending recovery while the scheduler remains a
       // backstop.
@@ -199,29 +191,6 @@ export function createSessionController(options: {
       await send(answer, question.agent_path ?? "/root", question.ref);
       scheduleConfiguredRunRecovery();
       return;
-    }
-    if (name === "/reconcile") {
-      const accountId = options.state().session.account_id;
-      if (!accountId) throw new NyxError("The server must provide this session's customer account before reconciliation.", "api");
-      if (args) {
-        const split = args.indexOf(" ");
-        if (split < 1) throw new NyxError("Usage: /reconcile <operation-id> <resolution.json>", "config");
-        const operation = args.slice(0, split);
-        const filename = args.slice(split + 1).trim();
-        const resolution = JSON.parse(await readFile(filename, { encoding: "utf8", signal })) as OperationResolution;
-        if (!resolution || !["model_receipt", "tool_result", "confirmed_not_dispatched"].includes(resolution.action)
-          || !resolution.resolution_id || !Array.isArray(resolution.evidence_refs) || !resolution.evidence_refs.length) {
-          throw new NyxError("Resolution requires an explicit action, resolution_id and evidence_refs.", "config");
-        }
-        if (signal) await api.reconcileOperation(sessionId, operation, resolution, accountId, signal);
-        else await api.reconcileOperation(sessionId, operation, resolution, accountId);
-        dispatch({ type: "notice", text: `Recorded resolution for ${operation}.` });
-        scheduleConfiguredRunRecovery();
-      }
-      dispatch({ type: "operations", operations: signal
-        ? await api.listOperations(sessionId, accountId, signal)
-        : await api.listOperations(sessionId, accountId) });
-      dispatch({ type: "panel", panel: "reconcile" }); return;
     }
     const panels: Record<string, SessionPanel> = {
       "/questions": "questions", "/artifacts": "artifacts", "/findings": "findings",

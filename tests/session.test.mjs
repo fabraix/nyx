@@ -887,8 +887,6 @@ test("ordinary controller prose recovers its generated message identity after re
     submitMessage,
     interruptAgent: async () => {},
     getSession: async () => state.session,
-    listOperations: async () => [],
-    reconcileOperation: async () => {},
     resumeRun: async () => { throw new Error("ordinary session must not resume a run"); },
   };
   try {

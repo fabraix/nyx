@@ -49,25 +49,6 @@ export interface AcceptedMessage {
   queued: boolean;
 }
 
-export interface PendingOperation {
-  operation_id: string;
-  kind: string;
-  agent_id: string;
-  turn_id: string;
-  tool_name?: string | null;
-  supported: boolean;
-}
-
-export interface OperationResolution {
-  action: "model_receipt" | "tool_result" | "confirmed_not_dispatched";
-  resolution_id: string;
-  evidence_refs: string[];
-  actual_cost_usd?: number;
-  receipt?: Record<string, unknown>;
-  response?: Record<string, unknown>;
-  result?: unknown;
-}
-
 export interface RunResume {
   run_id: string;
   session_id: string;
@@ -274,7 +255,7 @@ export async function resolveOutboxReceipt(query: OutboxReceiptQuery,
   return receipt.state;
 }
 
-/** Request single-flight recovery after an operator advances a configured run. */
+/** Request single-flight recovery after a user answers a configured run's question. */
 export async function resumeRun(runId: string, signal?: AbortSignal): Promise<RunResume> {
   if (!runId.trim()) throw new NyxError("Run ID must not be empty.", "config");
   const result = await request<RunResume>(
@@ -286,7 +267,7 @@ export async function resumeRun(runId: string, signal?: AbortSignal): Promise<Ru
   if (!result || result.run_id !== runId || typeof result.session_id !== "string"
     || !result.session_id || !["active", "pending", "dispatched"].includes(result.status)) {
     throw new NyxError(
-      "Run recovery returned an invalid acknowledgement; the durable operator action remains recorded.",
+      "Run recovery returned an invalid acknowledgement; the answer remains recorded.",
       "network",
     );
   }
@@ -343,17 +324,6 @@ export async function submitMessage(sessionId: string, text: string, agentPath: 
     pending.abandon();
     throw error;
   }
-}
-
-export async function listOperations(sessionId: string, accountId: string,
-  signal?: AbortSignal): Promise<PendingOperation[]> {
-  const result = await request<{ operations: PendingOperation[] }>("GET", path(sessionId, `/operations?account_id=${encodeURIComponent(accountId)}`), undefined, signal);
-  return result.operations;
-}
-
-export async function reconcileOperation(sessionId: string, operationId: string,
-  resolution: OperationResolution, accountId: string, signal?: AbortSignal): Promise<unknown> {
-  return request("POST", path(sessionId, `/operations/${encodeURIComponent(operationId)}/reconcile`), { ...resolution, account_id: accountId }, signal);
 }
 
 export async function interruptAgent(sessionId: string, agentPath: string,

@@ -1,7 +1,4 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import React from "react";
@@ -250,8 +247,6 @@ test("controller binds answer and interruption to selected child and fresh turn"
     submitMessage: async (...args) => { calls.push(["send", ...args]); return accepted; },
     interruptAgent: async (...args) => { calls.push(["interrupt", ...args]); },
     getSession: async () => session,
-    listOperations: async () => [],
-    reconcileOperation: async () => { throw new Error("Unexpected reconciliation"); },
     resumeRun: async () => { throw new Error("Ordinary sessions must not resume a run"); },
   };
   let detached = false;
@@ -281,8 +276,6 @@ test("controller stops the exact inactive child state generation", async () => {
     interruptAgent: async (...args) => { calls.push(args); },
     getSession: async () => session,
     submitMessage: async () => accepted,
-    listOperations: async () => [],
-    reconcileOperation: async () => { throw new Error("Unexpected reconciliation"); },
     resumeRun: async () => { throw new Error("Ordinary sessions must not resume a run"); },
   };
   const controller = createSessionController({
@@ -310,8 +303,6 @@ test("controller refuses an unfenced inactive stop from an old server", async ()
       interruptAgent: async () => { calls++; },
       getSession: async () => session,
       submitMessage: async () => accepted,
-      listOperations: async () => [],
-      reconcileOperation: async () => {},
       resumeRun: async () => { throw new Error("Ordinary sessions must not resume a run"); },
     },
   });
@@ -319,14 +310,48 @@ test("controller refuses an unfenced inactive stop from an old server", async ()
   assert.equal(calls, 0);
 });
 
-test("configured-run operator actions retry a pending supervisor recovery in a tracked background task", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "nyx-controller-recovery-"));
-  const resolutionFile = join(directory, "resolution.json");
-  writeFileSync(resolutionFile, JSON.stringify({
-    action: "confirmed_not_dispatched",
-    resolution_id: "operator-proof",
-    evidence_refs: ["provider-log:fixture"],
-  }));
+test("removed reconciliation commands reject without side effects while ordinary commands remain available", async () => {
+  let state = initialSessionState({ ...session, account_id: "account-1" });
+  const calls = [];
+  let detached = false;
+  const controller = createSessionController({
+    state: () => state,
+    dispatch: (event) => { state = reduceSession(state, event); },
+    detach: () => { detached = true; },
+    api: {
+      listAgents: async () => [{ agent_path: "/root", status: "idle", active_turn_id: null }],
+      submitMessage: async (...args) => { calls.push(["send", ...args]); return accepted; },
+      getSession: async () => { calls.push(["status"]); return session; },
+      interruptAgent: async () => { throw new Error("Unexpected interruption"); },
+      resumeRun: async () => { throw new Error("Ordinary sessions must not resume a run"); },
+    },
+  });
+  const before = state;
+  for (const command of ["/reconcile", "/reconcile operation-1 /unused/resolution.json"]) {
+    await assert.rejects(controller.command(command), /Unknown command/);
+  }
+  assert.equal(state, before);
+  assert.deepEqual(calls, []);
+
+  await controller.command("/help");
+  const help = panelText(state);
+  assert.doesNotMatch(help, /reconcil/i);
+  for (const command of ["/status", "/answer", "/approve", "/quit"]) {
+    assert.ok(help.includes(command), `${command} remains in help`);
+  }
+  await controller.command("hello");
+  assert.deepEqual(calls[0].slice(0, 5), ["send", "fixture", "hello", "/root", null]);
+  await controller.command("/status");
+  assert.equal(state.panel, "status");
+  assert.deepEqual(calls[1], ["status"]);
+  await controller.command("/transcript");
+  assert.equal(state.panel, "transcript");
+  await controller.command("/quit");
+  assert.equal(detached, true);
+  assert.equal(calls.length, 2, "Help, transcript and detach have no server mutation");
+});
+
+test("configured-run answers retry a pending supervisor recovery in a tracked background task", async () => {
   let state = initialSessionState({
     ...session,
     run_id: "run-1",
@@ -335,6 +360,10 @@ test("configured-run operator actions retry a pending supervisor recovery in a t
   state = reduceSession(state, {
     type: "item",
     item: item(1, "question", { text: "Continue?" }),
+  });
+  state = reduceSession(state, {
+    type: "item",
+    item: item(2, "question", { text: "Which report format?" }),
   });
   const calls = [];
   let resumeAttempts = 0;
@@ -345,8 +374,6 @@ test("configured-run operator actions retry a pending supervisor recovery in a t
     submitMessage: async () => accepted,
     interruptAgent: async () => {},
     getSession: async () => state.session,
-    listOperations: async () => [],
-    reconcileOperation: async (...args) => { calls.push(["reconcile", ...args]); },
     resumeRun: async (...args) => {
       calls.push(["resume", ...args]);
       resumeAttempts += 1;
@@ -367,37 +394,23 @@ test("configured-run operator actions retry a pending supervisor recovery in a t
     detach: () => {},
     api,
   });
-  try {
-    await controller.command("/approve item-1");
-    assert.deepEqual(calls, [
-      ["resume", "run-1"],
-    ], "the durable operator command returns during recovery backoff");
-    await controller.drain();
-    assert.deepEqual(calls, [
-      ["resume", "run-1"],
-      ["resume", "run-1"],
-    ]);
+  await controller.command("/approve item-1");
+  assert.deepEqual(calls, [
+    ["resume", "run-1"],
+  ], "the durable answer command returns during recovery backoff");
+  await controller.drain();
+  assert.deepEqual(calls, [
+    ["resume", "run-1"],
+    ["resume", "run-1"],
+  ]);
 
-    await controller.command(`/reconcile operation-1 ${resolutionFile}`);
-    await controller.drain();
-    assert.equal(calls[2][0], "reconcile");
-    assert.equal(calls[2][1], "fixture");
-    assert.equal(calls[2][2], "operation-1");
-    assert.equal(calls[2][4], "account-1");
-    assert.deepEqual(calls[3], ["resume", "run-1"]);
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
+  await controller.command("/answer item-2 Plain text.");
+  await controller.drain();
+  assert.deepEqual(calls[2], ["resume", "run-1"]);
+  assert.equal(calls.length, 3);
 });
 
 test("configured-run recovery is single-flight, does not block queued status, and drains on detach", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "nyx-controller-single-flight-"));
-  const resolutionFile = join(directory, "resolution.json");
-  writeFileSync(resolutionFile, JSON.stringify({
-    action: "confirmed_not_dispatched",
-    resolution_id: "operator-proof",
-    evidence_refs: ["provider-log:fixture"],
-  }));
   const abort = new AbortController();
   let state = initialSessionState({
     ...session, run_id: "run-abort", account_id: "account-1",
@@ -405,6 +418,10 @@ test("configured-run recovery is single-flight, does not block queued status, an
   state = reduceSession(state, {
     type: "item",
     item: item(1, "question", { text: "Continue?" }),
+  });
+  state = reduceSession(state, {
+    type: "item",
+    item: item(2, "question", { text: "Which report format?" }),
   });
   const calls = [];
   const controller = createSessionController({
@@ -417,8 +434,6 @@ test("configured-run recovery is single-flight, does not block queued status, an
       submitMessage: async () => { calls.push("answer"); return accepted; },
       interruptAgent: async () => {},
       getSession: async () => { calls.push("status"); return state.session; },
-      listOperations: async () => { calls.push("operations"); return []; },
-      reconcileOperation: async () => { calls.push("reconcile"); },
       resumeRun: async (_runId, signal) => {
         calls.push("resume");
         assert.equal(signal, abort.signal);
@@ -433,23 +448,21 @@ test("configured-run recovery is single-flight, does not block queued status, an
   });
   try {
     queue.submit("/approve item-1");
-    queue.submit(`/reconcile operation-1 ${resolutionFile}`);
+    queue.submit("/answer item-2 Plain text.");
     queue.submit("/status");
     await Promise.race([
       (async () => { while (!calls.includes("status")) await delay(1); })(),
       delay(100).then(() => { throw new Error("recovery backoff blocked the command queue"); }),
     ]);
     assert.equal(calls.filter((call) => call === "resume").length, 1,
-      "operator triggers for the same run share one recovery task");
-    assert.ok(calls.includes("answer"));
-    assert.ok(calls.includes("reconcile"));
+      "answers for the same run share one recovery task");
+    assert.equal(calls.filter((call) => call === "answer").length, 2);
   } finally {
     abort.abort();
     await Promise.race([
       Promise.all([queue.drain(), controller.drain()]),
       delay(100).then(() => { throw new Error("aborted recovery lifecycle did not drain"); }),
     ]);
-    rmSync(directory, { recursive: true, force: true });
   }
   assert.notEqual(state.notice?.error, true,
     "local detach is not reported as a failed durable action");

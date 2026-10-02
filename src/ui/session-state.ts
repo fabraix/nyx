@@ -1,13 +1,12 @@
-import type { AcceptedMessage, PendingOperation, Session, SessionAgent, SessionItem } from "../api/session.js";
+import type { AcceptedMessage, Session, SessionAgent, SessionItem } from "../api/session.js";
 
-export type SessionPanel = "transcript" | "status" | "agents" | "questions" | "reconcile" | "artifacts" | "findings" | "help";
+export type SessionPanel = "transcript" | "status" | "agents" | "questions" | "artifacts" | "findings" | "help";
 export type SessionEvent =
   | { type: "session"; session: Session }
   | { type: "item"; item: SessionItem }
   | { type: "cursor"; sequence: number }
   | { type: "accepted"; message: AcceptedMessage }
   | { type: "agents"; agents: SessionAgent[] }
-  | { type: "operations"; operations: PendingOperation[] }
   | { type: "select_agent"; agentPath: string }
   | { type: "panel"; panel: SessionPanel }
   | { type: "connection"; status: "connected" | "reconnecting"; message?: string }
@@ -20,7 +19,6 @@ export interface SessionViewState {
   questions: SessionItem[];
   questionsSequence: number;
   agents: SessionAgent[];
-  operations: PendingOperation[];
   selectedAgent: string;
   panel: SessionPanel;
   connection: "connected" | "reconnecting";
@@ -49,7 +47,7 @@ function boundedTerminals(values: Record<string, string>): Record<string, string
 
 export function initialSessionState(session: Session, sequence = 0): SessionViewState {
   return { session, sequence, items: [], questions: session.pending_questions ?? [],
-    questionsSequence: session.pending_questions_sequence ?? 0, agents: [], operations: [], selectedAgent: "/root",
+    questionsSequence: session.pending_questions_sequence ?? 0, agents: [], selectedAgent: "/root",
     panel: "transcript", connection: "connected", pending: {}, terminals: {} };
 }
 
@@ -87,7 +85,6 @@ export function reduceSession(state: SessionViewState, event: SessionEvent): Ses
       } : {}) };
     }
     case "agents": return { ...state, agents: event.agents };
-    case "operations": return { ...state, operations: event.operations };
     case "select_agent": return { ...state, selectedAgent: event.agentPath, panel: "transcript" };
     case "panel": return { ...state, panel: event.panel };
     case "notice": return { ...state, notice: { text: event.text, error: event.error } };

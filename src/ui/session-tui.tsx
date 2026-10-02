@@ -21,9 +21,6 @@ export function panelText(state: SessionViewState): string | undefined {
       `${agent.agent_path === state.selectedAgent ? "›" : " "} ${agent.agent_path}  ${agent.status}${agent.task ? `\n    ${String(agent.task)}` : ""}`).join("\n\n") || "No agents reported yet.";
     case "questions": return state.questions
       .map((item) => `${item.ref ?? item.sequence}  ${item.agent_path}\n${itemText(item)}`).join("\n\n") || "No pending requests.";
-    case "reconcile": return state.operations.map((operation) =>
-      `${operation.operation_id}  ${operation.tool_name ?? operation.kind}  ${operation.supported ? "resolution supported" : "domain-specific recovery required"}`)
-      .join("\n") || "No unresolved operations.";
     case "artifacts":
     case "findings": return state.items.filter((item) => item.kind.includes(state.panel === "artifacts" ? "artifact" : "finding"))
       .map((item) => JSON.stringify(item.payload, null, 2)).join("\n\n") || `No ${state.panel} recorded in the loaded transcript.`;

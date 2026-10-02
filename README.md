@@ -147,17 +147,13 @@ commands. Page Up/Down browses the loaded transcript; Escape closes a detail vie
 exact inactive state generation of a child. If that child starts or completes a
 newer turn concurrently, the request is rejected instead of cancelling newer work.
 
-An admin can inspect unknown effects with `/reconcile` and submit an explicit,
-evidence-backed resolution using `/reconcile <operation-id> <resolution.json>`.
-The existing API enforces account and admin authorization.
-
-After an answer, approval, or reconciliation is durably recorded, configured-run
+After an answer or approval is durably recorded, configured-run
 recovery continues as one cancellable background task per run. Its bounded
 lease-handoff backoff never blocks `/status`, `/interrupt`, or later terminal
 commands; detaching cancels and drains only that local recovery task.
 
 `/approve` is a shorthand answer to a specific durable question. It does not
-grant network, publication, finding, or reconciliation authority; those actions
+grant network, publication, or finding authority; those actions
 remain behind their typed authenticated server APIs.
 
 Transient read failures reconnect from the last observed sequence cursor. Before
