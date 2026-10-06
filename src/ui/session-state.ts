@@ -52,18 +52,17 @@ export function initialSessionState(session: Session, sequence = 0): SessionView
 }
 
 export function terminalToken(item: SessionItem): string | undefined {
-  // correlation_id is the structural accepted-input identity and is never
-  // passed through content redaction. A credential can be a substring of the
-  // generated completion token, so the redacted payload copy is display-only.
+  // correlation_id is the structural accepted-input identity and wins over the
+  // payload copy when both are present.
   const token = item.correlation_id ?? item.payload.completion_token;
   return typeof token === "string" ? token : undefined;
 }
 
 export function questionResolutionRef(item: SessionItem): string | undefined {
   // Answered/reconciled questions carry the canonical question item as their
-  // structural correlation. Agent-stop resolutions predate that field but use
-  // the immutable `resolved_${questionId}` item identity. Payload references
-  // remain a final compatibility fallback because they may be content-redacted.
+  // structural correlation. Agent-stop resolutions use the immutable
+  // `resolved_${questionId}` item identity. Payload references are the final
+  // fallback.
   const structural = item.correlation_id ?? (
     typeof item.ref === "string" && item.ref.startsWith("resolved_")
       ? item.ref.slice("resolved_".length)

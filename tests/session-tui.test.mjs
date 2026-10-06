@@ -37,16 +37,16 @@ test("reducer keeps accepted input pending through stale idle and unrelated term
   assert.equal(budgetText(state.session), "$0.24 / $5.00");
 });
 
-test("structural terminal identity survives redaction of the display payload", () => {
+test("structural terminal identity survives a mismatching display payload", () => {
   const completionToken = "input_owned-hash";
   let state = initialSessionState(session);
   state = reduceSession(state, { type: "accepted", message: { ...accepted, completion_token: completionToken } });
   state = reduceSession(state, { type: "item", item: item(2, "input_terminal", {
-    status: "idle", completion_token: "[redacted]_owned-hash",
+    status: "idle", completion_token: "display_owned-hash",
   }, { correlation_id: completionToken }) });
   assert.deepEqual(state.pending, {});
   assert.equal(state.terminals[completionToken], "idle");
-  assert.equal(state.terminals["[redacted]_owned-hash"], undefined);
+  assert.equal(state.terminals["display_owned-hash"], undefined);
 });
 
 test("questions belong to agents and survive unrelated input", () => {
@@ -72,15 +72,15 @@ test("question replies clear only their durable reference and snapshots are auth
   assert.deepEqual(state.questions, [], "Old transcript cannot resurrect a resolved question");
   state = reduceSession(state, { type: "item", item: item(9, "question", { text: "New question" }) });
   state = reduceSession(state, { type: "session", session: { ...session, pending_questions: [], pending_questions_sequence: 8 } });
-  assert.equal(state.questions[0].ref, "item-9", "Stale replica snapshot cannot clear a newer request");
+  assert.equal(state.questions[0].ref, "item-9", "Stale snapshot cannot clear a newer request");
   state = reduceSession(state, { type: "item", item: item(10, "question_resolved", {
-    response_to: "[redacted]",
+    response_to: "display-copy",
   }, { correlation_id: "item-9", ref: "resolved_item-9" }) });
   assert.deepEqual(state.questions, []);
 
   state = reduceSession(state, { type: "item", item: item(11, "question", { text: "Stopped child?" }) });
   state = reduceSession(state, { type: "item", item: item(12, "question_resolved", {
-    response_to: "[redacted]",
+    response_to: "display-copy",
   }, { ref: "resolved_item-11" }) });
   assert.deepEqual(state.questions, [], "Resolution item identity is the fallback when correlation is absent");
 });
@@ -196,7 +196,7 @@ test("agents panel preserves complete child tasks", () => {
   assert.match(panelText({ ...state, panel: "agents" }), /END-OF-CHILD-TASK/);
 });
 
-test("event source reconnects at durable cursor, drains suppressed pages and does not redispatch input", async () => {
+test("event source reconnects at durable cursor, drains empty pages and does not redispatch input", async () => {
   const abort = new AbortController();
   const afters = [];
   let reads = 0;
@@ -351,7 +351,7 @@ test("removed reconciliation commands reject without side effects while ordinary
   assert.equal(calls.length, 2, "Help, transcript and detach have no server mutation");
 });
 
-test("configured-run answers retry a pending supervisor recovery in a tracked background task", async () => {
+test("configured-run answers retry a pending resume in a tracked background task", async () => {
   let state = initialSessionState({
     ...session,
     run_id: "run-1",
@@ -410,7 +410,7 @@ test("configured-run answers retry a pending supervisor recovery in a tracked ba
   assert.equal(calls.length, 3);
 });
 
-test("configured-run recovery is single-flight, does not block queued status, and drains on detach", async () => {
+test("configured-run recovery runs one task per run, does not block queued status, and drains on detach", async () => {
   const abort = new AbortController();
   let state = initialSessionState({
     ...session, run_id: "run-abort", account_id: "account-1",

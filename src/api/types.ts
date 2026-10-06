@@ -4,5 +4,4 @@ export interface TokenValidationResponse {
   userId: string;
   email: string;
   accountId?: string;
-  adminValidated?: boolean;
 }

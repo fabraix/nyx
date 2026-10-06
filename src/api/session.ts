@@ -255,7 +255,7 @@ export async function resolveOutboxReceipt(query: OutboxReceiptQuery,
   return receipt.state;
 }
 
-/** Request single-flight recovery after a user answers a configured run's question. */
+/** Ask the server to resume a run after the user answers one of its questions. */
 export async function resumeRun(runId: string, signal?: AbortSignal): Promise<RunResume> {
   if (!runId.trim()) throw new NyxError("Run ID must not be empty.", "config");
   const result = await request<RunResume>(

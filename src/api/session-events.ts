@@ -39,7 +39,7 @@ export async function* sessionEvents(sessionId: string, options: {
         after = page.next_sequence;
         advanced = after > previous;
       } while (advanced && !options.signal.aborted);
-      // Marks a fully drained poll, including internal/suppressed item cursors.
+      // Marks a fully drained poll, including pages that carried no items.
       yield { type: "cursor", sequence: after };
     } catch (error) {
       if (options.signal.aborted) return;

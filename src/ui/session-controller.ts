@@ -26,11 +26,9 @@ type SessionAPI = { getSession: typeof getSession; listAgents: typeof listAgents
   interruptAgent: typeof interruptAgent;
   resumeRun: typeof resumeRun };
 
-// A just-recorded wake can briefly overlap the exiting supervisor's lease.
-// Retry only this causal user action; ordinary session polling never calls
-// the product-run recovery endpoint. The bounded backoff spans the server's
-// 75-second durable single-flight claim window, while a normal lease release
-// converges in the first few attempts.
+// A resume requested right after an answer may not be accepted on the first
+// attempt. Retry only this causal user action, with a bounded backoff;
+// ordinary session polling never calls the resume endpoint.
 const configuredRunRecoveryDelaysMs = [
   250, 500, 1_000, 2_000, 4_000, 8_000, 15_000, 15_000, 15_000, 15_000,
 ];
@@ -87,7 +85,7 @@ export function createSessionController(options: {
         if (recoveryDelay === undefined) {
           dispatch({
             type: "notice",
-            text: "Operator action recorded; the current supervisor or recovery scheduler will continue this assessment.",
+            text: "Operator action recorded; the assessment will continue on its own.",
           });
           return;
         }
@@ -95,13 +93,11 @@ export function createSessionController(options: {
       }
     } catch (error) {
       if (signal?.aborted) return;
-      // The answer receipt is already durable. Do not turn a
-      // failed redispatch acknowledgement into an invitation to repeat that
-      // effect; surface the pending recovery while the scheduler remains a
-      // backstop.
+      // The answer is already recorded. A failed resume request must not
+      // invite the user to repeat it; report that recovery is still pending.
       dispatch({
         type: "notice",
-        text: `Operator action recorded; supervisor recovery is pending (${error instanceof Error ? error.message : String(error)}).`,
+        text: `Operator action recorded; assessment recovery is pending (${error instanceof Error ? error.message : String(error)}).`,
         error: true,
       });
     }
